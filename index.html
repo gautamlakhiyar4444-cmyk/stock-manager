@@ -246,6 +246,16 @@
         .hidden {
             display: none;
         }
+        
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            color: #0d47a1;
+        }
     </style>
 </head>
 <body>
@@ -276,6 +286,9 @@
                 </div>
                 <div id="componentsSection" class="hidden">
                     <label>Select Components:</label>
+                    <div class="info-box">
+                        ℹ️ When you add initial stock for a composite item, it will automatically deduct from component items.
+                    </div>
                     <div id="componentsList" class="checkbox-group">
                         <p style="color: #666;">Add some basic items first to create composite items</p>
                     </div>
@@ -346,6 +359,25 @@
                 if (newItem.components.length === 0) {
                     showAlert('Please select at least one component for composite item', 'error');
                     return;
+                }
+                
+                // Check if we have enough component stock for initial composite stock
+                if (stock > 0) {
+                    const canCreate = newItem.components.every(comp => {
+                        const componentItem = inventory.find(i => i.id === comp.id);
+                        return componentItem && componentItem.stock >= (comp.quantity * stock);
+                    });
+                    
+                    if (!canCreate) {
+                        showAlert('Insufficient component stock for initial quantity!', 'error');
+                        return;
+                    }
+                    
+                    // Deduct from components for initial stock
+                    newItem.components.forEach(comp => {
+                        const componentItem = inventory.find(i => i.id === comp.id);
+                        componentItem.stock -= (comp.quantity * stock);
+                    });
                 }
             }
             
