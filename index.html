@@ -366,25 +366,36 @@
             const item = inventory.find(i => i.id === itemId);
             if (!item) return;
             
-            if (item.isComposite && change < 0) {
-                // Selling composite item - deduct from components
-                const canSell = item.components.every(comp => {
-                    const componentItem = inventory.find(i => i.id === comp.id);
-                    return componentItem && componentItem.stock >= (comp.quantity * Math.abs(change));
-                });
-                
-                if (!canSell) {
-                    showAlert('Insufficient component stock!', 'error');
-                    return;
+            if (item.isComposite) {
+                // For composite items, always update component stocks
+                if (change > 0) {
+                    // Adding composite item stock - deduct from components
+                    const canAdd = item.components.every(comp => {
+                        const componentItem = inventory.find(i => i.id === comp.id);
+                        return componentItem && componentItem.stock >= (comp.quantity * change);
+                    });
+                    
+                    if (!canAdd) {
+                        showAlert('Insufficient component stock to add composite items!', 'error');
+                        return;
+                    }
+                    
+                    // Deduct from components
+                    item.components.forEach(comp => {
+                        const componentItem = inventory.find(i => i.id === comp.id);
+                        componentItem.stock -= (comp.quantity * change);
+                    });
+                    
+                } else {
+                    // Removing/selling composite item - add back to components
+                    item.components.forEach(comp => {
+                        const componentItem = inventory.find(i => i.id === comp.id);
+                        componentItem.stock += (comp.quantity * Math.abs(change));
+                    });
                 }
-                
-                // Deduct from components
-                item.components.forEach(comp => {
-                    const componentItem = inventory.find(i => i.id === comp.id);
-                    componentItem.stock -= (comp.quantity * Math.abs(change));
-                });
             }
             
+            // Update the item's own stock
             item.stock += change;
             if (item.stock < 0) item.stock = 0;
             
